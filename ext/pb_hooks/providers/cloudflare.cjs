@@ -91,6 +91,8 @@ function delRecord(name, zoneId, accessKey) {
         logger.warn('Deleting DNS record error:', recordId)
       }
     }
+
+    return true
   } catch (error) {
     console.error('Error to txt record:', error)
     throw error
