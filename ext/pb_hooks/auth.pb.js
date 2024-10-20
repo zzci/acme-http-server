@@ -1,86 +1,55 @@
 /// <reference path="../pb_data/types.d.ts" />
 
 function apiAuth(next) {
-  const { logger, base64, dao, sha256, error } = require(__hooks + '/utils/index.cjs')
+  const authWithToken = require(__hooks + '/models/auth.cjs')
+  const { logger, base64 } = require(__hooks + '/utils/index.cjs')
 
   return c => {
     const auth = c.request().header.get('Authorization')
     if (auth) {
-      if (auth.startsWith('Basic')) {
-        try {
-          const token = auth.split(' ')[1]
-          const [username, password] = base64.decode(token).split(':')
-          let user
-          try {
-            user = dao().findAuthRecordByUsername('users', username)
-          } catch (e) {
-            error('Basic: auth user not found')
-          }
-
-          if (user.validatePassword(password)) {
-            c.set('authRecord', user)
-            try {
-              return next(c)
-            } catch (e) {
-              console.log(e.stack)
-              return c.json(500, { status: 500, msg: 'Internal Server Error' })
-            }
-          }
-        } catch (e) {
-          logger.error('Basic: auth failed')
-        }
-
-        return c.json(401, { status: 401, msg: 'Unauthorized' })
-      }
       /**
        * 3-18 是token_id
        * 19- 是token
        * collection: expiry_at, token, user_id
-       * demo key: sk_7kkqtwmdqub2edbaaaa
+       *
+       * echo -n 'IMTOKEN' | sha256sum
+       * d443b10b8a354cad4581627f7de1506d52ee5b631a02086d23c357974f3ac8af
+       * 保存在数据库中作为token，拿到token id, glr36ulv3ktwqh4
+       * 合并请求token信息
+       * demo key: sk_glr36ulv3ktwqh4IMTOKEN
        */
-      if (auth.startsWith('Bearer')) {
-        const token = auth.split(' ')[1]
-        if (token.startsWith('sk_')) {
-          try {
-            const token_id = token.substring(3, 18)
-            const token_plain = token.substring(19)
-            logger.log('token_enc:', sha256(token_plain))
-
-            let record
-            try {
-              record = dao().findRecordById('tokens', token_id)
-            } catch (e) {
-              error('Bearer: auth token not found', e)
-            }
-
-            if (sha256(token_plain) !== record.get('token')) {
-              error('Bearer: auth token not match')
-            }
-
-            if (record.get('expiry_at') < new DateTime()) {
-              error('Bearer: auth token expiried')
-            }
-
-            const userId = record.get('user_id')
-            try {
-              const authRecord = dao().findRecordById('users', userId)
-              c.set('authRecord', authRecord)
-
-              try {
-                return next(c)
-              } catch (e) {
-                console.log(e.stack)
-                return c.json(500, { status: 500, msg: 'Internal Server Error' })
-              }
-            } catch (e) {
-              error('Bearer: auth user not found', e)
-            }
-          } catch (e) {
-            logger.error('Bearer: auth failed')
-          }
-
-          return c.json(401, { status: 401, msg: 'Unauthorized' })
+      let authToken
+      let needAuth = false
+      const token = auth.split(' ')[1]
+      if (auth.startsWith('Basic')) {
+        needAuth = true
+        try {
+          const authInfo = base64.decode(token).split(':')
+          authToken = authInfo[1]
+          needAuth = authInfo[0]
+        } catch (e) {
+          logger.error('Get auth info failed')
         }
+      }
+      if (auth.startsWith('Bearer') && token.startsWith('sk_')) {
+        needAuth = true
+        authToken = token
+      }
+      if (needAuth) {
+        try {
+          const authRecord = authWithToken(authToken)
+          c.set('authRecord', authRecord)
+          try {
+            return next(c)
+          } catch (e) {
+            console.log(e.stack)
+            return c.json(500, { status: 500, msg: 'Internal Server Error' })
+          }
+        } catch (e) {
+          logger.error('Auth failed')
+        }
+
+        return c.json(401, { status: 401, msg: 'Unauthorized' })
       }
     }
     return next(c)
