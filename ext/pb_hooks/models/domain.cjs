@@ -119,7 +119,7 @@ function cleanup(data, user, requestsInfo) {
   const collection = $app.dao().findCollectionByNameOrId('record_history')
   const record = new Record(collection, {
     domain: domainData.domainRecord.get('id'),
-    type: 'present',
+    type: 'cleanup',
     logs: {
       data,
       requestsInfo,

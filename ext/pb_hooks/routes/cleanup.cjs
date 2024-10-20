@@ -26,8 +26,9 @@ function handler(c) {
     }
   } catch (e) {
     logger.error(e)
-    return c.json(400, { status: 400, msg: 'Failed to present domain' })
   }
+
+  return c.json(400, { status: 400, msg: 'Failed to cleanup domain' })
 }
 
 module.exports = handler
