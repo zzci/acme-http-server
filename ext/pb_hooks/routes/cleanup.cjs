@@ -1,5 +1,6 @@
 const domain = require(__hooks + '/models/domain.cjs')
 const { logger } = require(__hooks + '/utils/index.cjs')
+const { getRemoteAddress } = require(__hooks + '/utils/index.cjs')
 
 function handler(c) {
   const data = $apis.requestInfo(c).data
