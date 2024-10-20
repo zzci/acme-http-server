@@ -22,7 +22,7 @@ function getZones(accessKey) {
 }
 
 function setTxtRecord(name, content, zoneId, accessKey) {
-  logger.debug('Setting txt record:', name, content, zoneId, accessKey)
+  logger.debug(name, content, zoneId)
   try {
     const headers = {
       Authorization: `Bearer ${accessKey}`,
