@@ -37,8 +37,9 @@ function apiAuth(next) {
       }
       if (needAuth) {
         try {
-          const authRecord = authWithToken(authToken)
+          const { tokenId, authRecord } = authWithToken(authToken)
           c.set('authRecord', authRecord)
+          c.set('tokenId', tokenId)
           try {
             return next(c)
           } catch (e) {

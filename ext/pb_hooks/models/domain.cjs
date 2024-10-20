@@ -6,12 +6,16 @@ const getdbid = dao().findRecordById
 
 function parseDomain(domain) {
   const isCname = !domain.startsWith('_acme-challenge')
-  const mainDomain = isCname ? domain : domain.replace('_acme-challenge.', '')
+  let mainDomain = isCname ? domain : domain.replace('_acme-challenge.', '')
 
+  if (mainDomain.endsWith('.')) {
+    mainDomain = mainDomain.slice(0, -1)
+  }
   return { isCname, mainDomain }
 }
 
 function getDomain(domain, user, isCname = false) {
+  logger.debug(domain)
   try {
     const domainRecord = getdbFilter(
       'domains',
@@ -43,6 +47,7 @@ function getAccess(id) {
 
 function prepare(data, user) {
   const { isCname, mainDomain } = parseDomain(data.fqdn)
+  logger.debug(data)
   let domainRecord, accessRecord, parentDomainRecord, parentDomain
   try {
     domainRecord = getDomain(mainDomain, user, isCname)
@@ -68,29 +73,63 @@ function prepare(data, user) {
   return { domainRecord, parentDomainRecord, accessRecord, parentDomain }
 }
 
-function present(data, user) {
+function present(data, user, requestsInfo) {
   const domainData = prepare(data, user)
   logger.debug(data.fqdn)
-  if (domainData.accessRecord.get('type') == 'cloudflare') {
-    return cloudflare.present({
+  let result
+  try {
+    if (domainData.accessRecord.get('type') == 'cloudflare') {
+      result = cloudflare.present({
+        data,
+        user,
+        ...domainData,
+      })
+    }
+  } catch (e) {}
+  const collection = $app.dao().findCollectionByNameOrId('record_history')
+  const record = new Record(collection, {
+    domain: domainData.domainRecord.get('id'),
+    type: 'present',
+    logs: {
       data,
-      user,
-      ...domainData,
-    })
-  }
+      requestsInfo,
+      accessRecord: domainData.accessRecord.get('id'),
+      error: result == true ? '' : JSON.stringify(result),
+    },
+    result: result == true ? 'success' : 'failed',
+  })
+  $app.dao().saveRecord(record)
+  return result
 }
 
-function cleanup(data, user) {
+function cleanup(data, user, requestsInfo) {
   logger.debug(data.fqdn)
   const domainData = prepare(data, user)
-
-  if (domainData.accessRecord.get('type') == 'cloudflare') {
-    return cloudflare.cleanup({
+  logger.debug(data.fqdn)
+  let result
+  try {
+    if (domainData.accessRecord.get('type') == 'cloudflare') {
+      result = cloudflare.cleanup({
+        data,
+        user,
+        ...domainData,
+      })
+    }
+  } catch (e) {}
+  const collection = $app.dao().findCollectionByNameOrId('record_history')
+  const record = new Record(collection, {
+    domain: domainData.domainRecord.get('id'),
+    type: 'present',
+    logs: {
       data,
-      user,
-      ...domainData,
-    })
-  }
+      requestsInfo,
+      accessRecord: domainData.accessRecord.get('id'),
+      error: result == true ? '' : JSON.stringify(result),
+    },
+    result: result == true ? 'success' : 'failed',
+  })
+  $app.dao().saveRecord(record)
+  return result
 }
 
 module.exports = {

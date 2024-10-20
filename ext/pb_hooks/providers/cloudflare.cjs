@@ -28,7 +28,7 @@ function setTxtRecord(name, content, zoneId, accessKey) {
       Authorization: `Bearer ${accessKey}`,
       'Content-Type': 'application/json',
     }
-
+    error('Setting txt record error:')
     const body = {
       name: name,
       ttl: 60,
@@ -50,10 +50,10 @@ function setTxtRecord(name, content, zoneId, accessKey) {
     ) {
       return true
     } else {
-      error('Set txt record error:', result)
+      return result.errors
     }
   } catch (e) {
-    error('Set txt record error:', e)
+    return e.stack
   }
 }
 
@@ -91,11 +91,9 @@ function delRecord(name, zoneId, accessKey) {
         logger.warn('Deleting DNS record error:', recordId)
       }
     }
-
     return true
   } catch (error) {
-    console.error('Error to txt record:', error)
-    throw error
+    return error.stack
   }
 }
 
@@ -124,7 +122,7 @@ function prepare(domainData) {
         if (parentDomainRecord.access == domainRecord.access) {
           zoneId = parentDomainRecord.get('zoneid')
           if (!zoneId) {
-            zoneId = getZoneid(parentDomainRecord.name, accessKey)
+            zoneId = getZoneid(parentDomainRecord.domain, accessKey)
 
             if (!zoneId) error('Failed to get domain zoneId by main domain')
 

@@ -3,12 +3,13 @@ services:
     image: acme-http-server
     container_name: acme-http-server
     environment:
-      - PB_DEBUG=${PB_DEBUG:-}
+      - PB_DEBUG=${PB_DEBUG:-true}
       - PB_LOG_LEVEL=${PB_LOG_LEVEL:-0}
     volumes:
       # - ./data/pb_hooks:/app/cms/pb_hooks
       - ./data/pb_data:/app/cms/pb_data
       - ./data/pb_public:/app/cms/pb_public
+      # - ./data/pb_migrations:/app/cms/pb_migrations
     networks:
       - traefik
 networks:

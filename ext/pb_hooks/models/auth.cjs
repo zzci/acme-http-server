@@ -24,7 +24,10 @@ function authWithToken(token) {
 
   const userId = record.get('user_id')
   try {
-    return dao().findRecordById('users', userId)
+    return {
+      tokenId: token_id,
+      authRecord: dao().findRecordById('users', userId),
+    }
   } catch (e) {
     error('User not found', e)
   }

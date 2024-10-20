@@ -1,9 +1,10 @@
 const domain = require(__hooks + '/models/domain.cjs')
-const { logger } = require(__hooks + '/utils/index.cjs')
+const { getRemoteAddress } = require(__hooks + '/utils/index.cjs')
 
 function handler(c) {
   const data = $apis.requestInfo(c).data
-
+  const requetsIp = getRemoteAddress(c.request().header)
+  const tokenId = c.get('tokenId')
   const user = c.get('authRecord')
 
   if (!user) {
@@ -14,18 +15,15 @@ function handler(c) {
     return c.json(400, { status: 400, msg: 'fqdn and value are required' })
   }
 
-  if (data.fqdn.endsWith('.')) {
-    data.fqdn = data.fqdn.slice(0, -1)
-  }
-
   try {
-    if (domain.present(data, user)) {
+    if (domain.present(data, user, { requetsIp, tokenId })) {
       return c.json(200, { status: 200, msg: 'Success' })
     }
   } catch (e) {
-    logger.error(e)
-    return c.json(400, { status: 400, msg: 'Failed to present domain' })
+    console.error(e.stack)
   }
+
+  return c.json(400, { status: 400, msg: 'Failed to present domain' })
 }
 
 module.exports = handler

@@ -3,7 +3,8 @@ const { logger } = require(__hooks + '/utils/index.cjs')
 
 function handler(c) {
   const data = $apis.requestInfo(c).data
-
+  const requetsIp = getRemoteAddress(c.request().header)
+  const tokenId = c.get('tokenId')
   const user = c.get('authRecord')
 
   if (!user) {
@@ -19,7 +20,7 @@ function handler(c) {
   }
 
   try {
-    if (domain.cleanup(data, user)) {
+    if (domain.cleanup(data, user, { requetsIp, tokenId })) {
       return c.json(200, { status: 200, msg: 'Success' })
     }
   } catch (e) {
