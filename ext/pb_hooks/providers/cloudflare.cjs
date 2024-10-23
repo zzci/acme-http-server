@@ -28,7 +28,7 @@ function setTxtRecord(name, content, zoneId, accessKey) {
       Authorization: `Bearer ${accessKey}`,
       'Content-Type': 'application/json',
     }
-    error('Setting txt record error:')
+
     const body = {
       name: name,
       ttl: 60,
